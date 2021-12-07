@@ -17,29 +17,35 @@ read_values(File, X) :-
       close(Fd)
    ).
 
-eq_b(X, Y, B) :-
-   X #= Y #<==> B.
+sumdiffs(K, N, X, S) :-
+   sumdiffs(K, N, X, S, 0).
+sumdiffs(_K, [], _, S, S).
+sumdiffs(1, [H | T], X, Dist, Tmp) :-
+   NTmp #= abs(H - X) + Tmp,
+   sumdiffs(1, T, X, Dist, NTmp).
+sumdiffs(2, [H | T], X, Dist, Tmp) :-
+   Dum #= abs(H - X),
+   NTmp #= Tmp + ((Dum*(Dum+1)) div 2),
+   sumdiffs(2, T, X, Dist, NTmp).
 
-subtask(N, Min, Dist) :-
-   subtask(N, Min, Dist, 0).
-subtask([], _, Dist, Dist).
-subtask([H | T], Min, Dist, Tmp) :-
-   NTmp #= abs(Min - H) + Tmp,
-   subtask(T, Min, Dist, NTmp).
-
-task(File, [Min, Dist]) :-
-   read_values(File, N),
+mindiff(K, N, Min) :-
    min_list(N, Inf),
    max_list(N, Sup),
-   length(N, Len),
-   SupDist #= (Sup - Inf)*Len,
-   Min in Inf..Sup,
-   Dist in 0..SupDist,
-   labeling([min(Dist)],[Dist,Min]),
-   subtask(N, Min, Dist).
+   sumdiffs(K, N, Inf, CMin),
+   mindiff(K, N, [Inf, Sup], Min, CMin).
+mindiff(K, N, [Inf, Sup], Min, CMin) :-
+   Inf #=< Sup,
+   sumdiffs(K, N, Inf, PMin),
+   NMin #= min(CMin, PMin),
+   NInf #= Inf + 1,
+   mindiff(K, N, [NInf, Sup], Min, NMin).
+mindiff(_K, _N, [X, Y], Min, Min) :-
+   X #> Y.
 
-task1(File, Z) :-
-   task(File, Z, 80).
+task1(File, Dist) :-
+   read_values(File, N),
+   mindiff(1, N, Dist).
 
-task2(File, Z) :-
-   task(File, Z, 256).
+task2(File, Dist) :-
+   read_values(File, N),
+   mindiff(2, N, Dist).
